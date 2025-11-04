@@ -124,11 +124,7 @@ scale_up_pred <- function(whichModel) {
         if (tier_col == "Tier5") {
 
           pred_tierIndex <- post_dist_df_tier5 %>%
-            dplyr::group_by(fYEAR, draw, !!sym(tier_col), model_name) %>%
-            dplyr::summarize(
-              cover_prop = pred,
-              .groups = "drop"
-            ) %>%
+            dplyr::rename(cover_prop = pred) %>%
             dplyr::select(fYEAR, !!sym(tier_col), draw, model_name, cover_prop)
         
         predictions <- reefCloudPackage::make_contrasts(pred_tierIndex, tier_col)
@@ -236,11 +232,7 @@ scale_up_pred <- function(whichModel) {
 
           pred_tierIndex <- post_dist_df_tier5 %>%
             filter(tier_type == "data") %>%
-            dplyr::group_by(fYEAR, draw, !!sym(tier_col), model_name) %>%
-            dplyr::summarize(
-              cover_prop = pred,
-              .groups = "drop"
-            ) %>%
+            dplyr::rename(cover_prop = pred) %>%
             dplyr::select(fYEAR, !!sym(tier_col), draw, model_name, cover_prop)
 
           predictions <- reefCloudPackage::make_contrasts(pred_tierIndex, tier_col)
@@ -321,7 +313,7 @@ scale_up_pred <- function(whichModel) {
         # ---- Save data-tier results into the AWS bucket ----
         readr::write_csv(
           pred_tierIndex,
-          file = paste0(AWS_OUTPUT_PATH, "output", tierIndex, "_data.csv"),
+          file = paste0(AWS_OUTPUT_PATH, "output_tier", tierIndex, "_data.csv"),
           quote = "none"
         )
       }

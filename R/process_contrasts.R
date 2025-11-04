@@ -44,12 +44,13 @@ process_contrasts <- function(cellmeans_wide, tier_col) {
     )) |>
     select(year, fold_change, prob_up, prob_down, arrow)
 
-  predictions_i |>
+  predictions_i <- predictions_i |>
     filter(!is.na(value)) |>
     group_by(year, !!sym(tier_col), model_name) |>
     ggdist::median_hdci(value) |>
     select(-.width, -.interval) |>
     left_join(direction_arrow, by = "year")
   
+  return(predictions_i)
   rm(plot_data, fold_change, direction_arrow)
 }
