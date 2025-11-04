@@ -8,9 +8,9 @@
 
 make_contrasts <- function(pred_tierIndex, tier_col) {
     cellmeans_wide_list <- pred_tierIndex |>
-      group_split(!!sym(tier_col)) |>
-      map(~ .x |> 
-        pivot_wider(
+      dplyr::group_split(!!sym(tier_col)) |>
+      purrr::map(~ .x |> 
+        tidyr::pivot_wider(
           names_from = fYEAR,
           values_from = cover_prop
         )
