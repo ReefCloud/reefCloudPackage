@@ -18,13 +18,13 @@ model_fitModelTier_type5 <- function(data.grp.enough, tier.sf){
   #### START LOOP BY TIER
   #########################
   for (i in seq_along(tiers)) {
-    TIER <<- as.character(tiers[i])
+    TIER <- as.character(tiers[i])
 
     ## Filter to current tier
     data.grp.tier <- data.grp |>
       dplyr::filter(data.grp[[FOCAL_TIER]] == TIER) |>
       dplyr::select(-COVER) |>
-      dplyr::mutate(across(Tier5, as.character))
+      dplyr::mutate(Tier5 = as.character(Tier5))
 
     ## Join covariates
     tier.sf.joined <- reefCloudPackage::join_covariates_to_tier_lookup(tier.sf, i, N) |> 
@@ -48,13 +48,9 @@ model_fitModelTier_type5 <- function(data.grp.enough, tier.sf){
     ## Select covariates
     selected_covar <- reefCloudPackage::select_covariates(HexPred_sf, i , N) 
 
-    ## Scale covariates
-   # HexPred_sf <- HexPred_sf |>
-   #   dplyr::mutate(across(
-   #    matches("^severity.*|^max.*"),
-   #   ~ as.numeric((. - mean(., na.rm = TRUE)) / sd(., na.rm = TRUE))
-   #  ))
-
+    ## Check for collinearity 
+    selected_covar <- reefCloudPackage::filter_non_collinear(HexPred_sf, selected_covar, threshold = 0.7)
+    
     ## Add reefid and fill missing years
     covs.hexpred_tier_sf_v2_prep <- reefCloudPackage::make_reefid(tier.sf.joined, HexPred_sf, reef_layer.sf, i , N) 
 
@@ -139,23 +135,23 @@ model_fitModelTier_type5 <- function(data.grp.enough, tier.sf){
   #   ##############################
   #   #### Predict & summarise
   #   ##############################
-    pred <- FRK::predict(M, type = "mean", nsim = 1000)
+    # pred <- FRK::predict(M, type = "mean", nsim = 1000)
 
-    post_dist_df <- as.data.frame(pred$MC$mu_samples) |>
-      dplyr::mutate(fYEAR = obj_frk$ST_BAUs@data$fYEAR,
-                    Tier5 = obj_frk$ST_BAUs@data$Tier5,
-                    id_loc = row_number()) |>
-      tidyr::pivot_longer(!c(fYEAR, Tier5, id_loc), names_to = "draw", values_to = "pred") |>
-      dplyr::mutate(model_name = "FRK")
+    # post_dist_df <- as.data.frame(pred$MC$mu_samples) |>
+    #   dplyr::mutate(fYEAR = obj_frk$ST_BAUs@data$fYEAR,
+    #                 Tier5 = obj_frk$ST_BAUs@data$Tier5,
+    #                 id_loc = row_number()) |>
+    #   tidyr::pivot_longer(!c(fYEAR, Tier5, id_loc), names_to = "draw", values_to = "pred") |>
+    #   dplyr::mutate(model_name = "FRK")
 
-    tier.sf.joined$Tier5 <- as.factor(tier.sf.joined$Tier5)
+    # tier.sf.joined$Tier5 <- as.factor(tier.sf.joined$Tier5)
 
-    pred_sum_sf <- post_dist_df |> group_by(fYEAR, Tier5) |>
-      ggdist::median_hdci(pred) |>
-      dplyr::inner_join(tier.sf.joined |> dplyr::select(geometry, Tier5)) |>
-      sf::st_as_sf(sf_column_name = "geometry") |>
-      dplyr::mutate(Unc = .upper - .lower,
-                    Tier5_fYEAR = paste0(Tier5, fYEAR))
+    # pred_sum_sf <- post_dist_df |> group_by(fYEAR, Tier5) |>
+    #   ggdist::median_hdci(pred) |>
+    #   dplyr::inner_join(tier.sf.joined |> dplyr::select(geometry, Tier5)) |>
+    #   sf::st_as_sf(sf_column_name = "geometry") |>
+    #   dplyr::mutate(Unc = .upper - .lower,
+    #                 Tier5_fYEAR = paste0(Tier5, fYEAR))
 
   #   ##############################
   #   #### Save outputs
@@ -164,13 +160,13 @@ model_fitModelTier_type5 <- function(data.grp.enough, tier.sf){
      {
     saveRDS(
       list(
-        form = model_formula,
-        pred_sum_sf = pred_sum_sf,
-        post_dist_df = post_dist_df,
+  #      form = model_formula,
+  #      pred_sum_sf = pred_sum_sf,
+  #      post_dist_df = post_dist_df,
         data.grp.tier = data.grp.tier,
         M = M
       ),
-      file = paste0(DATA_PATH, "modelled/", "FRK_", FOCAL_TIER, "_", TIER, ".RData")
+      file = paste0(DATA_PATH, "modelled/", "FRK_", FOCAL_TIER, "_", TIER, "_", GROUP, ".RData")
     )
 
     # Update status 

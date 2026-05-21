@@ -249,7 +249,7 @@ model_fitModelTier_type6 <- function(data.grp.not.enough, tier.sf) {
         post_dist_df = post_dist_df,
         M = M
       ),
-      file = paste0(DATA_PATH, "modelled/", "INLA_", FOCAL_TIER, "_", TIER, ".RData")
+      file = paste0(DATA_PATH, "modelled/", "INLA_", FOCAL_TIER, "_", TIER, "_", GROUP, ".RData")
     )
       # Update status 
       old_item_name <- get_status_name(4, "INLA_saved")

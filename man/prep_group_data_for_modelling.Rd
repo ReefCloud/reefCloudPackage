@@ -2,21 +2,30 @@
 % Please edit documentation in R/prep_group_data_for_modelling.R
 \name{prep_group_data_for_modelling}
 \alias{prep_group_data_for_modelling}
-\title{Group data for model}
+\title{Prepare grouped data for modelling}
 \usage{
-prep_group_data_for_modelling(data, GROUP)
+prep_group_data_for_modelling(data, GROUP, tier.sf)
 }
 \arguments{
-\item{data}{data set}
+\item{data}{Data frame containing monitoring observations and spatial coordinates.}
 
-\item{GROUP}{string, name of group}
+\item{GROUP}{Character string specifying the benthic group to filter (matching `fGROUP`).}
+
+\item{tier.sf}{Spatial object containing tier polygons used for spatial assignment.}
 }
 \value{
-grouped data, arranged by Tier4, Tier5, Site, Transect, and descending fYEAR
+A data frame formatted for modelling, including aggregated counts, spatial tier information, coordinates, and factor variables arranged by Tier4, Tier5, Site, Transect, and descending year.
 }
 \description{
-Prepare fGROUP for modelling
+Filters monitoring data for a selected benthic group, assigns spatial tiers using spatial joins, aggregates observations at the Tier4–Tier5–year level, and formats the output for downstream modelling.
 }
 \examples{
-prep_group_data_for_modelling(data, GROUP)
+prep_group_data_for_modelling(
+  data = monitoring_data,
+  GROUP = "Hard coral",
+  tier.sf = tier5_sf
+)
+}
+\author{
+Julie Vercelloni
 }
