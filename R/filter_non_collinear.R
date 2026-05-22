@@ -32,7 +32,7 @@ filter_non_collinear <- function(df, vars, threshold = 0.7) {
   
   corr_long <- corr_long %>%
     rowwise() %>%
-    mutate(keep_var = list(select_lowest_lag(as.character(Var1),
+    mutate(keep_var = list(reefCloudPackage::select_lowest_lag(as.character(Var1),
                                              as.character(Var2),
                                              group,
                                              group))) %>%

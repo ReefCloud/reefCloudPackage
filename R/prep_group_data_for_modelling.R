@@ -32,23 +32,6 @@ prep_group_data_for_modelling <- function(data, GROUP, tier.sf) {
         ) %>%
         dplyr::filter(!is.na(Tier5))
 
-      # # Aggregate observations
-      # data.grp <- data.grp %>%
-      #   dplyr::group_by(Tier2, Tier3, Tier4, Tier5, fYEAR, P_CODE, SITE_NO, TRANSECT_NO) %>%
-      #   dplyr::summarise(
-      #     COUNT = sum(COUNT, na.rm = TRUE),
-      #     TOTAL = sum(TOTAL, na.rm = TRUE),
-      #     geometry = sf::st_union(geometry),
-      #     .groups = "drop"
-      #   ) %>%
-      #   dplyr::mutate(
-      #     centroid = sf::st_centroid(geometry),
-      #     LONGITUDE = sf::st_coordinates(centroid)[, 1],
-      #     LATITUDE  = sf::st_coordinates(centroid)[, 2]
-      #   ) %>%
-      #   dplyr::select(-centroid) %>%
-      #   sf::st_drop_geometry() %>%
-      #   droplevels()
 
       # Format variables for modelling
       data.grp <- data.grp %>%
