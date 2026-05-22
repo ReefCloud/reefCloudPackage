@@ -33,8 +33,8 @@ load_data_for_model <- function() {
 
   # Set target groups
   assign("GROUPS", c(
-    "CRUSTOSE CORALLINE ALGAE", "HARD CORAL",
-    "MACROALGAE", "TURF ALGAE", "SOFT CORAL"
+    "HARD CORAL",
+    "MACROALGAE", "SOFT CORAL"
   ), envir = .GlobalEnv)
 
   # Check and assign covariate info
