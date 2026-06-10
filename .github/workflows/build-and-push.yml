@@ -1,0 +1,154 @@
+name: Build and Push Model Image to ECR
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Dockerfile'
+      - 'R/**'
+      - 'scripts/**'
+      - '00_main.R'
+      - 'DESCRIPTION'
+      - 'NAMESPACE'
+      - 'VERSION'
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ap-southeast-2
+  AWS_ACCOUNT_ID: '255329909679'
+  ECR_REPOSITORY: reefcloud-model-frk
+  BASE_IMAGE_REPO: reefcloud-base-image
+  BASE_IMAGE_VERSION: '2024.11.1'
+  AWS_ROLE_ARN: arn:aws:iam::255329909679:role/ReefcloudFRKModelDeployRole
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build:
+    name: Build and Push Application Image
+    runs-on: self-hosted
+    timeout-minutes: 30  # Application build is fast (~5-10 min)
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Read VERSION file
+        id: version
+        run: echo "IMAGE_VERSION=$(cat VERSION)" >> $GITHUB_OUTPUT
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          role-session-name: GitHub_to_AWS_via_FederatedOIDC
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        run: |
+          ECR_REGISTRY="${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
+          echo "registry=$ECR_REGISTRY" >> $GITHUB_OUTPUT
+
+          # Self-hosted runner has flaky egress to the new ECR endpoint;
+          # docker login's HEAD on /v2/ intermittently times out at 15s.
+          # Retry with exponential backoff before giving up.
+          PASSWORD=$(aws ecr get-login-password --region ${{ env.AWS_REGION }})
+          for attempt in 1 2 3 4 5; do
+            echo "ECR login attempt $attempt..."
+            if printf '%s' "$PASSWORD" | docker login --username AWS --password-stdin "$ECR_REGISTRY"; then
+              echo "Successfully logged in to ECR: $ECR_REGISTRY"
+              exit 0
+            fi
+            sleep $((attempt * 5))
+          done
+          echo "ECR login failed after 5 attempts" >&2
+          exit 1
+
+      - name: Pull base image from ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          # Same flake mitigation as the login step.
+          for attempt in 1 2 3 4 5; do
+            echo "Pull attempt $attempt..."
+            if docker pull "$ECR_REGISTRY/${{ env.BASE_IMAGE_REPO }}:${{ env.BASE_IMAGE_VERSION }}"; then
+              exit 0
+            fi
+            sleep $((attempt * 5))
+          done
+          echo "Base image pull failed after 5 attempts" >&2
+          exit 1
+
+      - name: Build Docker image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ steps.version.outputs.IMAGE_VERSION }}
+        run: |
+          # Only tag with $IMAGE_TAG here. The :latest tag is applied
+          # server-side after the push (see "Tag latest in ECR" step) so
+          # we don't need a second docker push that re-handshakes the
+          # registry and risks the same flake.
+          docker build \
+            --no-cache \
+            --build-arg BASE_IMAGE_VERSION=${{ env.BASE_IMAGE_VERSION }} \
+            --build-arg ECR_REGISTRY=$ECR_REGISTRY \
+            --build-arg IMAGE_VERSION=$IMAGE_TAG \
+            -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG \
+            .
+
+      - name: Test image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ steps.version.outputs.IMAGE_VERSION }}
+        run: |
+          echo "Testing image..."
+          docker run --rm $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG --help
+
+      - name: Push image to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ steps.version.outputs.IMAGE_VERSION }}
+        run: |
+          # Same flake mitigation as the login + pull steps.
+          for attempt in 1 2 3 4 5; do
+            echo "Push attempt $attempt..."
+            if docker push "$ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG"; then
+              exit 0
+            fi
+            sleep $((attempt * 5))
+          done
+          echo "Image push failed after 5 attempts" >&2
+          exit 1
+
+      - name: Tag latest in ECR (server-side)
+        env:
+          IMAGE_TAG: ${{ steps.version.outputs.IMAGE_VERSION }}
+        run: |
+          # Apply :latest as a single ECR API call — no docker daemon and
+          # no second registry handshake. The image manifest already exists
+          # in ECR after the push above; we just attach an extra tag to it.
+          MANIFEST=$(aws ecr batch-get-image \
+            --repository-name "${{ env.ECR_REPOSITORY }}" \
+            --image-ids imageTag="$IMAGE_TAG" \
+            --region "${{ env.AWS_REGION }}" \
+            --query 'images[0].imageManifest' --output text)
+          aws ecr put-image \
+            --repository-name "${{ env.ECR_REPOSITORY }}" \
+            --image-tag latest \
+            --image-manifest "$MANIFEST" \
+            --region "${{ env.AWS_REGION }}" >/dev/null
+          echo "Tagged $IMAGE_TAG as :latest in ECR"
+
+      - name: Output image details
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ steps.version.outputs.IMAGE_VERSION }}
+        run: |
+          echo "Image pushed successfully!"
+          echo "Image URI: $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG"
+          echo "Latest URI: $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:latest"
+          echo "Base Image: $ECR_REGISTRY/${{ env.BASE_IMAGE_REPO }}:${{ env.BASE_IMAGE_VERSION }}"

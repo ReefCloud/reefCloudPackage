@@ -1,0 +1,54 @@
+# R
+.Rhistory
+.RData
+.Rproj.user
+*.Rproj
+
+# Data
+data/
+*.csv
+*.RData
+*.rds
+
+# Outputs
+outputs/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary
+*.tmp
+tmp/
+temp/
+
+# Docker
+*.tar.gz
+
+# Python virtual environments
+.venv/
+venv/
+ENV/
+env/
+infrastructure/cdk/.venv/
+
+# CDK
+cdk.out/
+cdk.context.json
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Claude Code per-project state
+.claude/

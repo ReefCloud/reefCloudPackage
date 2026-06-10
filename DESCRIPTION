@@ -1,0 +1,39 @@
+Package: reefCloudPackage
+Type: Package
+Title: ReefCloud Statistical Modelling Package
+Version: 0.1.3
+Author: Murray Logan, Julie Vercelloni
+Maintainer: Murray Logan <murray.logan@aims.gov.au>
+Description: Statistical modelling and analysis tools for coral reef monitoring data.
+    Provides functions for data loading, processing, spatial-temporal modelling,
+    and visualization of reef health metrics across different spatial tiers.
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.2
+Depends:
+    R (>= 4.0.0)
+Config/testthat/edition: 3
+Imports:
+    cli,
+    dplyr,
+    future,
+    future.apply,
+    geojsonsf,
+    magrittr,
+    ows4R,
+    processx,
+    Qtools,
+    readr,
+    rlang,
+    R.utils,
+    sf,
+    status,
+    stringr,
+    tibble,
+    tidyr,
+    validate,
+    vroom
+Suggests:
+    data.table,
+    testthat (>= 3.0.0)

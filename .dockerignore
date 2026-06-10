@@ -1,0 +1,43 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+docs/
+*.md
+
+# CI/CD
+.github
+
+# R
+.Rhistory
+.RData
+.Rproj.user
+*.Rproj
+
+# Data (don't include in image)
+data/
+*.csv
+*.RData
+*.rds
+
+# Editor
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary
+*.tmp
+tmp/
+temp/
