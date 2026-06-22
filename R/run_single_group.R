@@ -59,7 +59,7 @@ run_single_group <- function(group_name, group_id) {
     return(invisible(NULL))
   }
 
-  if (!DEBUG_MODE) cli::cli_h1(paste0("Modeling ", GROUP))
+  if (!DEBUG_MODE) cli::cli_h1(paste0("Modelling ", GROUP))
 
   # ---- Prepare group data ----
   data.grp <- reefCloudPackage::prep_group_data_for_modelling(data, GROUP)
@@ -89,7 +89,7 @@ run_single_group <- function(group_name, group_id) {
   }
 
   # --- Type 5: tiers with enough data (>=3 sites, >=2 years) ---
-  data.grp.enough <- reefCloudPackage::filter_focaltier_enough(
+  data.grp.enough <- filter_focaltier_enough(
     data.grp, FOCAL_TIER, n.spat = 3, n.temp = 2, i = 1, N = 1
   )
 
@@ -107,7 +107,7 @@ run_single_group <- function(group_name, group_id) {
   assign("TIER_STATUS", list(), envir = .GlobalEnv)
 
   if (nrow(data.grp.enough) > 0) {
-    reefCloudPackage::model_fitModelTier_type5(data.grp.enough, tier.sf)
+    reefCloudPackage::model_fitModelTier_type5_v2(data.grp.enough, tier.sf)
   } else {
     cat("  No tiers with enough data for type5, skipping.\n")
   }
@@ -139,7 +139,7 @@ run_single_group <- function(group_name, group_id) {
   cat(sprintf("  [DIAG] Type6 tiers (not enough data): %d (%d rows)\n", n_tiers_not_enough, nrow(data.grp.not.enough)))
 
   if (nrow(data.grp.not.enough) > 0) {
-    reefCloudPackage::model_fitModelTier_type6(data.grp.not.enough, tier.sf)
+    reefCloudPackage::model_fitModelTier_type6_v2(data.grp.not.enough, tier.sf)
   } else {
     cat("  No tiers for type6 fallback, skipping.\n")
   }
